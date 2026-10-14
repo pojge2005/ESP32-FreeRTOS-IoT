@@ -6,10 +6,10 @@ A learning project demonstrating task-based firmware on an ESP32: a simulated se
 
 ## Current features
 
-- **Sensor task:** generates a simulated integer in the range `20–39` every three seconds and places it in a FreeRTOS queue.
-- **LED task:** consumes queued values and turns the LED on when a value is greater than `30`. A push-button interrupt gives a binary semaphore; the LED task consumes it and toggles the LED.
-- **MQTT task:** connects to Wi-Fi and an MQTT broker, subscribes to `esp32/led`, and processes `ON` / `OFF` commands.
-- **Sensor topic:** publishes the simulated value to `esp32/sensor`.
+- **Sensor task:** generates a simulated integer in the range `20–39` about every three seconds and sends it without waiting to two bounded queues: one for LED logic and one for MQTT publishing.
+- **LED task:** consumes its own queue and turns the LED on when a value is greater than `30`. A push-button interrupt gives a binary semaphore; a timed queue wait lets the LED task service button events even when no sensor values arrive.
+- **MQTT task:** is the sole owner of PubSubClient calls, connects to Wi-Fi and the broker, subscribes to `esp32/led`, handles `ON` / `OFF` commands, and drains the outbound sensor queue when connected.
+- **Sensor topic:** publishes queued simulated values to `esp32/sensor` when MQTT is connected. A failed publish is counted and not retried indefinitely.
 
 ## Hardware and software
 
@@ -75,11 +75,11 @@ These are important follow-up items before treating this as a reliable system:
 
 ## Verification checklist
 
-- [ ] Sketch compiles with the selected Arduino-ESP32 core and installed PubSubClient version.
+- [ ] Sketch compiles with a recorded Arduino-ESP32 core and PubSubClient version.
 - [ ] Board and GPIO assignments have been checked against the actual hardware.
 - [ ] Serial output confirms Wi-Fi and MQTT connection (add diagnostics before relying on this).
 - [ ] MQTT command handling has been tested with `ON` and `OFF`.
-- [ ] Sensor topic behavior has been checked during broker disconnect/reconnect.
+- [ ] Sensor topic behavior, queue overflow, and reconnect backoff have been checked during broker disconnect/reconnect.
 - [ ] Button bounce and queue-full behavior have been tested.
 - [ ] No real Wi-Fi credentials or broker secrets are committed.
 
