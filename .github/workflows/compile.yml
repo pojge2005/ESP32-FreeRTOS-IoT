@@ -1,0 +1,46 @@
+name: Compile ESP32 firmware
+
+on:
+  pull_request:
+    paths:
+      - "FreeRTOS-ESP32Project.ino"
+      - ".github/workflows/compile.yml"
+  push:
+    branches: [main]
+    paths:
+      - "FreeRTOS-ESP32Project.ino"
+      - ".github/workflows/compile.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install pinned ESP32 core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.0.7
+
+      - name: Install pinned MQTT library
+        run: arduino-cli lib install "PubSubClient@2.8.0"
+
+      - name: Prepare Arduino sketch directory
+        run: |
+          mkdir -p /tmp/FreeRTOS-ESP32Project
+          cp FreeRTOS-ESP32Project.ino /tmp/FreeRTOS-ESP32Project/
+
+      - name: Compile for generic ESP32
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32 \
+            --warnings all \
+            /tmp/FreeRTOS-ESP32Project
